@@ -75,14 +75,10 @@ export function DashboardScreen() {
   const activeTasks = tab === 'mine' ? mineTasks : tab === 'given' ? givenTasks : approvalTasks;
 
   const navItems = React.useMemo(() => {
-    const items: React.ComponentProps<typeof DashboardQuickNav>['items'] = [
-      { icon: 'trophy', label: 'Liderlər', onPress: () => router.push('/store/leaderboard') },
-      { icon: 'git-network', label: 'Struktur', onPress: () => router.push('/store/org-chart') },
+    if (!canCreate) return [];
+    return [
+      { icon: 'add-circle' as const, label: 'Yeni Tapşırıq', accent: BRAVO_COLORS.primary, onPress: () => router.push('/store/create') },
     ];
-    if (canCreate) {
-      items.push({ icon: 'add-circle', label: 'Yeni', accent: BRAVO_COLORS.primary, onPress: () => router.push('/store/create') });
-    }
-    return items;
   }, [canCreate, router]);
 
   return (
@@ -99,7 +95,7 @@ export function DashboardScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         refreshControl={(
           <RefreshControl
             refreshing={refreshing}
@@ -109,7 +105,6 @@ export function DashboardScreen() {
         )}
         showsVerticalScrollIndicator={false}
       >
-        <DashboardQuickNav items={navItems} />
         <DashboardStats user={user} tasks={tasks} />
 
         {/* 3 tabs */}

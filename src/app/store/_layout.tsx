@@ -16,10 +16,8 @@ export default function StoreLayout() {
       }}
     >
       <Stack.Screen name="login" options={{ animation: 'none' }} />
-      <Stack.Screen name="index" />
+      <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
       <Stack.Screen name="create" />
-      <Stack.Screen name="leaderboard" />
-      <Stack.Screen name="org-chart" />
       <Stack.Screen name="task/[id]" />
     </Stack>
   );
