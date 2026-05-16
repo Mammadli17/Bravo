@@ -51,7 +51,7 @@ function OrgNode({ node, depth = 0, isLast = true }: NodeProps) {
                 )
               : null}
           </View>
-          {user?.canAssignTasks
+          {user && ['area_manager', 'store_manager', 'store_manager_assistant', 'section_leader', 'senior_seller'].includes(user.role)
             ? (
                 <View style={styles.assignBadge}>
                   <Ionicons name="create-outline" size={14} color={BRAVO_COLORS.primary} />

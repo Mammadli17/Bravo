@@ -4,11 +4,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui';
 import { BRAVO_COLORS } from '../constants/theme';
 
-const PRIORITIES: { key: TaskPriority; label: string; points: number; color: string }[] = [
-  { key: 'low', label: 'Aşağı', points: 15, color: '#22C55E' },
-  { key: 'medium', label: 'Orta', points: 25, color: '#EAB308' },
-  { key: 'high', label: 'Yüksək', points: 35, color: '#F97316' },
-  { key: 'urgent', label: 'Təcili', points: 50, color: '#EF4444' },
+const PRIORITIES: { key: TaskPriority; label: string; color: string }[] = [
+  { key: 'low', label: 'Aşağı', color: '#22C55E' },
+  { key: 'medium', label: 'Orta', color: '#EAB308' },
+  { key: 'high', label: 'Yüksək', color: '#F97316' },
+  { key: 'critical', label: 'Kritik', color: '#EF4444' },
 ];
 
 const DEADLINE_HOURS = [1, 2, 4, 8, 12, 24];
@@ -80,12 +80,7 @@ export function CreateTaskOptions({
 }
 
 const styles = StyleSheet.create({
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: BRAVO_COLORS.text,
-    marginBottom: 8,
-  },
+  fieldLabel: { fontSize: 14, fontWeight: '600', color: BRAVO_COLORS.text, marginBottom: 8 },
   priorityRow: { flexDirection: 'row', gap: 6, marginBottom: 16 },
   priorityChip: {
     flex: 1,
@@ -99,29 +94,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BRAVO_COLORS.border,
   },
-  priorityActive: {
-    backgroundColor: BRAVO_COLORS.primary,
-    borderColor: BRAVO_COLORS.primary,
-  },
+  priorityActive: { backgroundColor: BRAVO_COLORS.primary, borderColor: BRAVO_COLORS.primary },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
   priorityText: { fontSize: 12, fontWeight: '600', color: BRAVO_COLORS.text },
   priorityTextActive: { color: '#fff' },
   subLabel: { fontSize: 12, fontWeight: '500', color: BRAVO_COLORS.textMuted, marginBottom: 8, marginTop: -4 },
   deadlineRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   hourChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAVO_COLORS.surface, alignItems: 'center', borderWidth: 1, borderColor: BRAVO_COLORS.border },
-  dayChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: BRAVO_COLORS.surface,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: BRAVO_COLORS.border,
-  },
-  dayChipActive: {
-    backgroundColor: BRAVO_COLORS.primary,
-    borderColor: BRAVO_COLORS.primary,
-  },
+  dayChip: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: BRAVO_COLORS.surface, alignItems: 'center', borderWidth: 1, borderColor: BRAVO_COLORS.border },
+  dayChipActive: { backgroundColor: BRAVO_COLORS.primary, borderColor: BRAVO_COLORS.primary },
   dayText: { fontSize: 13, fontWeight: '600', color: BRAVO_COLORS.textMuted },
   dayTextActive: { color: '#fff' },
 });

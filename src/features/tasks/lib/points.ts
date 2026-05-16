@@ -37,7 +37,6 @@ export function formatDeadline(deadline: string): string {
 }
 
 export function isOverdue(task: TaskItem): boolean {
-  if (task.status === 'done' || task.status === 'cancelled')
-    return false;
+  if (task.status === 'completed' || task.status === 'cancelled') return false;
   return new Date(task.deadline).getTime() < Date.now();
 }

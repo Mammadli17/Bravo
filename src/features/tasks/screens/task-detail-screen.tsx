@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -29,27 +28,14 @@ export function TaskDetailScreen() {
       <View style={styles.container}>
         <BravoHeader title="Tapşırıq" showBack />
         <View style={styles.notFound}>
-          <Text>Tapşırıq tapılmadı</Text>
+          <Ionicons name="folder-open-outline" size={48} color={BRAVO_COLORS.textLight} />
+          <Text style={styles.notFoundText}>Tapşırıq tapılmadı</Text>
         </View>
       </View>
     );
   }
 
-  const isDone = task.status === 'done';
-  const canClaim
-    = !isDone
-      && (task.status === 'open_pool' || (task.status === 'pending' && !task.claimedById))
-      && user.role !== 'it_support'
-      && task.type === 'operational';
-  const canClaimIT
-    = !isDone && task.type === 'it_ticket' && user.role === 'it_support';
-  const canComplete
-    = !isDone
-      && (task.claimedById === user.id
-        || task.assignedToId === user.id
-        || (task.type === 'it_ticket' && user.role === 'it_support'));
-
-  const pointsPreview = isDone ? calculateEarnedPoints(task) : null;
+  const pointsPreview = task.status === 'completed' ? calculateEarnedPoints(task) : null;
 
   return (
     <View style={styles.container}>
@@ -58,16 +44,8 @@ export function TaskDetailScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.titleRow}>
+        <View style={styles.headerRow}>
           <StatusBadge status={task.status} />
-          {task.type === 'it_ticket'
-            ? (
-                <View style={styles.itBadge}>
-                  <Ionicons name="hardware-chip" size={14} color="#4338CA" />
-                  <Text style={styles.itBadgeText}>IT Bilet</Text>
-                </View>
-              )
-            : null}
         </View>
 
         <Text style={styles.title}>{task.title}</Text>
@@ -78,9 +56,9 @@ export function TaskDetailScreen() {
         {pointsPreview
           ? (
               <View style={styles.pointsBox}>
-                <Text style={styles.pointsTitle}>Qazanılan xal</Text>
-                <Text style={styles.pointsTotal}>{`${pointsPreview.total} xal`}</Text>
-                <Text style={styles.pointsBreakdown}>
+                <Ionicons name="star" size={24} color={BRAVO_COLORS.gold} />
+                <Text style={styles.pointsTotal}>{`+${pointsPreview.total} xal`}</Text>
+                <Text style={styles.pointsBreak}>
                   {`Əsas: ${pointsPreview.base} · Bonus: ${pointsPreview.bonus} · Cərimə: ${pointsPreview.penalty}`}
                 </Text>
               </View>
@@ -88,54 +66,45 @@ export function TaskDetailScreen() {
           : null}
 
         {task.beforeImageUrl
-          ? (
-              <PhotoBlock label="Əvvəl (Problem)" uri={task.beforeImageUrl} />
-            )
+          ? <PhotoBlock label="Əvvəl (Problem)" uri={task.beforeImageUrl} />
           : null}
         {task.afterImageUrl
-          ? (
-              <PhotoBlock label="Sonra (Həll)" uri={task.afterImageUrl} note={task.closingNote} />
-            )
+          ? <PhotoBlock label="Sonra (Həll)" uri={task.afterImageUrl} note={task.closingNote} />
           : null}
 
-        <TaskDetailActions
-          task={task}
-          user={user}
-          canClaim={canClaim}
-          canClaimIT={canClaimIT}
-          canComplete={canComplete}
-        />
+        <TaskDetailActions task={task} user={user} />
 
-        <Text style={styles.activityTitle}>Fəaliyyət tarixçəsi</Text>
-        {activity.map(item => (
-          <View key={item.id} style={styles.activityItem}>
-            <View style={styles.activityDot} />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityAction}>{item.actionAz}</Text>
-              <Text style={styles.activityMeta}>
-                {`${item.userName} · ${new Date(item.timestamp).toLocaleString('az-AZ')}`}
-              </Text>
-            </View>
-          </View>
-        ))}
+        {activity.length > 0
+          ? (
+              <>
+                <Text style={styles.activityTitle}>Fəaliyyət tarixçəsi</Text>
+                {activity.map(item => (
+                  <View key={item.id} style={styles.activityItem}>
+                    <View style={styles.activityDot} />
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityAction}>{item.actionAz}</Text>
+                      <Text style={styles.activityMeta}>
+                        {`${item.userName} · ${new Date(item.timestamp).toLocaleString('az-AZ')}`}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )
+          : null}
       </ScrollView>
     </View>
   );
 }
 
-function PhotoBlock({
-  label,
-  uri,
-  note,
-}: {
-  label: string;
-  uri: string;
-  note?: string;
-}) {
+function PhotoBlock({ label, uri, note }: { label: string; uri: string; note?: string }) {
   return (
     <View style={styles.photoSection}>
       <Text style={styles.photoLabel}>{label}</Text>
-      <Image source={{ uri }} style={styles.photo} contentFit="cover" />
+      <View style={styles.photoPlaceholder}>
+        <Ionicons name="image-outline" size={32} color={BRAVO_COLORS.textLight} />
+        <Text style={styles.photoUri} numberOfLines={1}>{uri}</Text>
+      </View>
       {note ? <Text style={styles.closingNote}>{note}</Text> : null}
     </View>
   );
@@ -144,34 +113,19 @@ function PhotoBlock({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BRAVO_COLORS.background },
   scroll: { padding: 16 },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  titleRow: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
-  itBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  itBadgeText: { fontSize: 11, fontWeight: '600', color: '#4338CA' },
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  notFoundText: { fontSize: 16, color: BRAVO_COLORS.textMuted },
+  headerRow: { marginBottom: 12 },
   title: { fontSize: 22, fontWeight: '700', color: BRAVO_COLORS.text, lineHeight: 28, marginBottom: 8 },
   description: { fontSize: 15, color: BRAVO_COLORS.textMuted, lineHeight: 22, marginBottom: 20 },
-  pointsBox: {
-    backgroundColor: BRAVO_COLORS.primaryLight,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  pointsTitle: { fontSize: 13, color: BRAVO_COLORS.primaryDark },
-  pointsTotal: { fontSize: 32, fontWeight: '800', color: BRAVO_COLORS.primary, marginVertical: 4 },
-  pointsBreakdown: { fontSize: 12, color: BRAVO_COLORS.textMuted },
+  pointsBox: { backgroundColor: BRAVO_COLORS.primaryLight, borderRadius: 14, padding: 16, marginBottom: 20, alignItems: 'center', gap: 4 },
+  pointsTotal: { fontSize: 32, fontWeight: '800', color: BRAVO_COLORS.primary },
+  pointsBreak: { fontSize: 12, color: BRAVO_COLORS.textMuted },
   photoSection: { marginBottom: 20 },
   photoLabel: { fontSize: 14, fontWeight: '600', color: BRAVO_COLORS.text, marginBottom: 8 },
-  photo: { height: 200, borderRadius: 14, backgroundColor: BRAVO_COLORS.border },
-  closingNote: { fontSize: 14, color: BRAVO_COLORS.textMuted, marginTop: 10, fontStyle: 'italic', lineHeight: 20 },
+  photoPlaceholder: { height: 80, backgroundColor: BRAVO_COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: BRAVO_COLORS.border, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  photoUri: { fontSize: 10, color: BRAVO_COLORS.textLight, maxWidth: '80%' },
+  closingNote: { fontSize: 14, color: BRAVO_COLORS.textMuted, marginTop: 8, fontStyle: 'italic', lineHeight: 20 },
   activityTitle: { fontSize: 16, fontWeight: '700', color: BRAVO_COLORS.text, marginBottom: 16 },
   activityItem: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   activityDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: BRAVO_COLORS.primary, marginTop: 5 },

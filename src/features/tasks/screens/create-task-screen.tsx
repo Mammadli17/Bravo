@@ -7,9 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BravoHeader } from '../components/bravo-header';
 import { CreateTaskForm } from '../components/create-task-form';
 import { BRAVO_COLORS } from '../constants/theme';
-import { getAssignableUsers, getITUsers } from '../data/mock-data';
-import { getCategoryByIndex } from '../lib/categories';
+import { getSubordinates, getUserById } from '../data/mock-data';
 import { getPriorityPoints } from '../lib/priority-points';
+import { getSectionLabel } from '../lib/sections';
 import { useBravoSession } from '../use-bravo-session';
 import { useTaskStore } from '../use-task-store';
 
@@ -19,18 +19,12 @@ export function CreateTaskScreen() {
   const user = useBravoSession.use.user()!;
   const createTask = useTaskStore.use.createTask();
 
-  const canCreateOperational = user.canAssignTasks || user.role === 'department_head';
-  const canOnlyIT = !canCreateOperational && user.canCreateITTicket;
-  const assignable = React.useMemo(() => getAssignableUsers(user), [user]);
-  const itAssignable = React.useMemo(() => getITUsers(user.id), [user.id]);
+  const subordinates = React.useMemo(() => getSubordinates(user.id), [user.id]);
 
   const [form, setForm] = React.useState<CreateTaskFormState>({
-    taskType: canOnlyIT ? 'it_ticket' : 'operational',
     title: '',
     description: '',
     priority: 'medium',
-    categoryIndex: 0,
-    isGeneralPool: false,
     deadlineDays: 2,
     deadlineHours: 0,
   });
@@ -44,34 +38,33 @@ export function CreateTaskScreen() {
       return;
     }
 
-    const category = getCategoryByIndex(form.categoryIndex);
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + form.deadlineDays);
     if (form.deadlineHours > 0) {
       deadline.setHours(deadline.getHours() + form.deadlineHours);
     }
 
-    const task = createTask({
+    const assignee = form.assigneeId ? getUserById(form.assigneeId) : undefined;
+    const sectionId = assignee?.sectionId ?? user.sectionId;
+    const sectionLabel = getSectionLabel(sectionId);
+
+    createTask({
       title: form.title.trim(),
       description: form.description.trim(),
       deadline: deadline.toISOString(),
-      type: form.taskType,
       priority: form.priority,
       points: getPriorityPoints(form.priority),
       createdById: user.id,
       storeId: user.storeId,
+      sectionId,
       assignedToId: form.assigneeId,
-      isGeneralPool:
-        form.taskType === 'it_ticket'
-        || (form.taskType === 'operational' && (form.isGeneralPool || !form.assigneeId)),
       beforeImageUrl: form.beforeImage,
-      category: form.taskType === 'it_ticket' ? 'IT Support' : category.en,
-      categoryAz: form.taskType === 'it_ticket' ? 'IT Dəstək' : category.az,
-      location: undefined,
+      category: sectionLabel,
+      categoryAz: sectionLabel,
     });
 
     showMessage({ message: 'Tapşırıq yaradıldı', type: 'success' });
-    router.replace(`/store/task/${task.id}`);
+    router.back();
   };
 
   return (
@@ -83,10 +76,7 @@ export function CreateTaskScreen() {
         showsVerticalScrollIndicator={false}
       >
         <CreateTaskForm
-          assignable={assignable}
-          itAssignable={itAssignable}
-          canOnlyIT={canOnlyIT}
-          canCreateOperational={canCreateOperational}
+          subordinates={subordinates}
           state={form}
           onChange={patchForm}
           onSubmit={handleSubmit}

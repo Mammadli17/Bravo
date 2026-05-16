@@ -1,6 +1,5 @@
 import type { TaskItem } from '../types';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -8,22 +7,23 @@ import { Text } from '@/components/ui';
 import { BRAVO_COLORS } from '../constants/theme';
 import { getUserById } from '../data/mock-data';
 import { formatDeadline, isOverdue } from '../lib/points';
+import { getSectionLabel } from '../lib/sections';
 import { PriorityDot } from './priority-dot';
 import { StatusBadge } from './status-badge';
 
-type Props = {
-  task: TaskItem;
-  showAssignee?: boolean;
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#22C55E',
+  medium: '#EAB308',
+  high: '#F97316',
+  critical: '#EF4444',
 };
 
-export function TaskCard({ task, showAssignee = true }: Props) {
+type Props = { task: TaskItem };
+
+export function TaskCard({ task }: Props) {
   const router = useRouter();
   const overdue = isOverdue(task);
-  const assignee = task.assignedToId
-    ? getUserById(task.assignedToId)
-    : task.claimedById
-      ? getUserById(task.claimedById)
-      : undefined;
+  const assignee = task.assignedToId ? getUserById(task.assignedToId) : undefined;
 
   return (
     <Pressable
@@ -31,57 +31,33 @@ export function TaskCard({ task, showAssignee = true }: Props) {
       onPress={() => router.push(`/store/task/${task.id}`)}
     >
       <View style={styles.topRow}>
-        <View style={styles.typeRow}>
+        <View style={styles.leftMeta}>
           <PriorityDot priority={task.priority} />
-          <Text style={styles.category}>{task.categoryAz}</Text>
-          {task.type === 'it_ticket'
-            ? (
-                <View style={styles.itTag}>
-                  <Ionicons name="hardware-chip" size={12} color="#4338CA" />
-                  <Text style={styles.itText}>IT</Text>
-                </View>
-              )
-            : null}
+          <Text style={styles.section}>{getSectionLabel(task.sectionId)}</Text>
         </View>
         <StatusBadge status={task.status} compact />
       </View>
 
-      <Text style={styles.title} numberOfLines={2}>
-        {task.title}
-      </Text>
+      <Text style={styles.title} numberOfLines={2}>{task.title}</Text>
 
-      <View style={styles.metaRow}>
-        <Ionicons
-          name="time-outline"
-          size={14}
-          color={overdue ? BRAVO_COLORS.danger : BRAVO_COLORS.textMuted}
-        />
-        <Text
-          style={[styles.deadline, overdue && styles.overdue]}
-        >
-          {formatDeadline(task.deadline)}
-        </Text>
+      <View style={styles.bottomRow}>
+        <View style={styles.deadlineRow}>
+          <Ionicons name="time-outline" size={13} color={overdue ? BRAVO_COLORS.danger : BRAVO_COLORS.textMuted} />
+          <Text style={[styles.deadline, overdue && styles.overdue]}>{formatDeadline(task.deadline)}</Text>
+        </View>
         <View style={styles.pointsChip}>
-          <Ionicons name="star" size={12} color={BRAVO_COLORS.gold} />
+          <Ionicons name="star" size={11} color={BRAVO_COLORS.gold} />
           <Text style={styles.points}>{task.points}</Text>
         </View>
       </View>
 
-      {showAssignee && assignee
+      {assignee
         ? (
-            <Text style={styles.assignee}>
-              {assignee.nameAz}
-            </Text>
-          )
-        : null}
-
-      {task.beforeImageUrl
-        ? (
-            <Image
-              source={{ uri: task.beforeImageUrl }}
-              style={styles.thumb}
-              contentFit="cover"
-            />
+            <View style={styles.assigneeRow}>
+              <View style={[styles.assigneeDot, { backgroundColor: PRIORITY_COLORS[task.priority] ?? BRAVO_COLORS.primary }]} />
+              <Text style={styles.assignee}>{assignee.nameAz}</Text>
+              <Text style={styles.assigneeRole}>{assignee.roleLabelAz}</Text>
+            </View>
           )
         : null}
     </Pressable>
@@ -93,72 +69,28 @@ const styles = StyleSheet.create({
     backgroundColor: BRAVO_COLORS.surface,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: BRAVO_COLORS.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
-  pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  typeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  category: {
-    fontSize: 12,
-    color: BRAVO_COLORS.textMuted,
-    fontWeight: '500',
-  },
-  itTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  itText: { fontSize: 10, fontWeight: '700', color: '#4338CA' },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: BRAVO_COLORS.text,
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  deadline: { fontSize: 13, color: BRAVO_COLORS.textMuted, flex: 1 },
+  pressed: { opacity: 0.93 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  leftMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  section: { fontSize: 12, color: BRAVO_COLORS.textMuted, fontWeight: '500' },
+  title: { fontSize: 15, fontWeight: '700', color: BRAVO_COLORS.text, lineHeight: 21, marginBottom: 10 },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
+  deadline: { fontSize: 12, color: BRAVO_COLORS.textMuted },
   overdue: { color: BRAVO_COLORS.danger, fontWeight: '600' },
-  pointsChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFBEB',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
+  pointsChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FFFBEB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   points: { fontSize: 12, fontWeight: '700', color: BRAVO_COLORS.gold },
-  assignee: {
-    fontSize: 12,
-    color: BRAVO_COLORS.primary,
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  thumb: {
-    height: 72,
-    borderRadius: 10,
-    marginTop: 12,
-    backgroundColor: BRAVO_COLORS.background,
-  },
+  assigneeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: BRAVO_COLORS.border },
+  assigneeDot: { width: 7, height: 7, borderRadius: 3.5 },
+  assignee: { fontSize: 12, fontWeight: '600', color: BRAVO_COLORS.text, flex: 1 },
+  assigneeRole: { fontSize: 11, color: BRAVO_COLORS.textMuted },
 });

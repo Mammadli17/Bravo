@@ -4,39 +4,29 @@ import { StyleSheet, View } from 'react-native';
 import { useTaskStore } from '../use-task-store';
 import { StatsCard } from './stats-card';
 
-type Props = { user: BravoUser; tasks: TaskItem[]; isManager: boolean };
+type Props = { user: BravoUser; tasks: TaskItem[] };
 
-export function DashboardStats({ user, tasks, isManager }: Props) {
+export function DashboardStats({ user, tasks }: Props) {
   const leaderboard = useTaskStore.use.leaderboard();
-  const weeklyPoints
-    = leaderboard.find(e => e.userId === user.id)?.weeklyPoints ?? 0;
+  const weeklyPoints = leaderboard.find(e => e.userId === user.id)?.weeklyPoints ?? 0;
 
-  const storeTasks = tasks.filter(
-    t => t.storeId === user.storeId || t.assignedToId === user.id,
+  const myTasks = tasks.filter(
+    t => t.assignedToId === user.id || t.createdById === user.id,
   );
-  const active = storeTasks.filter(
-    t => t.status !== 'done' && t.status !== 'cancelled',
+  const active = myTasks.filter(
+    t => t.status === 'assigned' || t.status === 'in_progress',
   ).length;
-  const pool = storeTasks.filter(t => t.status === 'open_pool').length;
-  const done = storeTasks.filter(t => t.status === 'done').length;
-  const myActive = storeTasks.filter(
-    t =>
-      (t.claimedById === user.id || t.assignedToId === user.id)
-      && t.status !== 'done',
-  ).length;
+  const waitingApproval = myTasks.filter(t => t.status === 'waiting_approval').length;
+  const completed = myTasks.filter(t => t.status === 'completed').length;
 
   return (
     <>
-      <View style={styles.statsRow}>
-        <StatsCard
-          icon="list"
-          label="Aktiv tapşırıq"
-          value={isManager ? active : myActive}
-        />
-        <StatsCard icon="water" label="Ümumi hovuz" value={pool} accent="#3B82F6" />
+      <View style={styles.row}>
+        <StatsCard icon="list" label="Aktiv tapşırıq" value={active} />
+        <StatsCard icon="time" label="Təsdiq gözlənir" value={waitingApproval} accent="#3B82F6" />
       </View>
-      <View style={styles.statsRow}>
-        <StatsCard icon="checkmark-done" label="Tamamlanan" value={done} accent="#10B981" />
+      <View style={styles.row}>
+        <StatsCard icon="checkmark-done" label="Tamamlanan" value={completed} accent="#10B981" />
         <StatsCard icon="star" label="Bu həftə xal" value={weeklyPoints} accent="#D4A017" />
       </View>
     </>
@@ -44,9 +34,5 @@ export function DashboardStats({ user, tasks, isManager }: Props) {
 }
 
 const styles = StyleSheet.create({
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-  },
+  row: { flexDirection: 'row', gap: 10, marginTop: 10 },
 });

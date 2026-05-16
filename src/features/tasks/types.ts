@@ -1,22 +1,32 @@
-export type UserRole
-  = | 'regional_manager'
-    | 'store_manager'
-    | 'department_head'
-    | 'floor_staff'
-    | 'cashier'
-    | 'it_support';
+export type UserRole =
+  | 'area_manager'
+  | 'store_manager'
+  | 'store_manager_assistant'
+  | 'section_leader'
+  | 'senior_seller'
+  | 'seller';
 
-export type TaskStatus
-  = | 'pending'
-    | 'open_pool'
-    | 'claimed'
-    | 'in_progress'
-    | 'done'
-    | 'cancelled';
+export type TaskStatus =
+  | 'assigned'
+  | 'in_progress'
+  | 'waiting_approval'
+  | 'completed'
+  | 'rejected'
+  | 'rework_requested'
+  | 'overdue'
+  | 'cancelled';
 
-export type TaskType = 'operational' | 'it_ticket';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type SectionType =
+  | 'fruit_vegetables'
+  | 'dry_foods'
+  | 'beverages'
+  | 'cash_desk'
+  | 'dairy'
+  | 'meat'
+  | 'bakery'
+  | 'operations';
 
 export type BravoUser = {
   id: string;
@@ -28,12 +38,10 @@ export type BravoUser = {
   roleLabelAz: string;
   storeId: string;
   storeName: string;
-  department?: string;
+  sectionId?: SectionType;
+  managerId?: string;
   avatarUrl: string;
   rank: number;
-  canAssignTasks: boolean;
-  canCreateITTicket: boolean;
-  reportsTo?: string;
 };
 
 export type StoreLocation = {
@@ -55,7 +63,6 @@ export type HierarchyNode = {
 
 export type TaskItem = {
   id: string;
-  type: TaskType;
   title: string;
   description: string;
   status: TaskStatus;
@@ -66,15 +73,15 @@ export type TaskItem = {
   deadline: string;
   completedAt?: string;
   storeId: string;
+  sectionId?: SectionType;
   createdById: string;
   assignedToId?: string;
-  claimedById?: string;
+  forwardChain: string[];
   beforeImageUrl?: string;
   afterImageUrl?: string;
   closingNote?: string;
   category: string;
   categoryAz: string;
-  location?: string;
 };
 
 export type LeaderboardEntry = {
@@ -109,8 +116,6 @@ export type PerformanceStats = {
   lateCompletions: number;
   averageCompletionHours: number;
 };
-
-export type DashboardFilter = 'all' | 'pool' | 'mine' | 'it' | 'done';
 
 export type ActivityLog = {
   id: string;

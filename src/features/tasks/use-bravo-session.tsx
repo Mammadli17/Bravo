@@ -35,7 +35,7 @@ const _useBravoSession = create<BravoSessionState>()(
         if (!user) {
           return {
             success: false,
-            error: 'İşçi ID tapılmadı. 1001, 1002 və ya 1003 sınayın.',
+            error: 'İşçi ID tapılmadı. 1001–1017 arasında bir ID sınayın.',
           };
         }
         set({ user, isAuthenticated: true });

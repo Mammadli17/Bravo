@@ -1,12 +1,7 @@
 import type { LeaderboardEntry, UserRole } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui';
 import { BravoHeader } from '../components/bravo-header';
@@ -16,42 +11,37 @@ import { useBravoSession } from '../use-bravo-session';
 import { useTaskStore } from '../use-task-store';
 
 type Period = 'weekly' | 'monthly';
-type Category = 'kassir' | 'satis' | 'mudirler';
+type Category = 'saticilar' | 'sobe_rehleri' | 'mudirler';
 
 const CATEGORY_ROLES: Record<Category, UserRole[]> = {
-  kassir: ['cashier'],
-  satis: ['floor_staff'],
-  mudirler: ['store_manager', 'regional_manager', 'department_head', 'it_support'],
+  saticilar: ['seller', 'senior_seller'],
+  sobe_rehleri: ['section_leader', 'store_manager_assistant'],
+  mudirler: ['store_manager', 'area_manager'],
 };
 
 const CATEGORY_LABELS: Record<Category, string> = {
-  kassir: 'Kassir',
-  satis: 'Satış',
+  saticilar: 'Satıcılar',
+  sobe_rehleri: 'Şöbə Rəhbərləri',
   mudirler: 'Müdirlər',
 };
 
 const CATEGORY_ICONS: Record<Category, React.ComponentProps<typeof Ionicons>['name']> = {
-  kassir: 'card-outline',
-  satis: 'storefront-outline',
+  saticilar: 'storefront-outline',
+  sobe_rehleri: 'layers-outline',
   mudirler: 'briefcase-outline',
 };
 
 function defaultCategory(role: UserRole): Category {
-  if (role === 'cashier') return 'kassir';
-  if (role === 'floor_staff') return 'satis';
+  if (role === 'seller' || role === 'senior_seller') return 'saticilar';
+  if (role === 'section_leader' || role === 'store_manager_assistant') return 'sobe_rehleri';
   return 'mudirler';
 }
 
 const roleMap = Object.fromEntries(MOCK_USERS.map(u => [u.id, u]));
-
 const RANK_COLORS = ['#F59E0B', '#9CA3AF', '#B45309'];
 
 function initials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map(n => n[0])
-    .join('');
+  return name.split(' ').slice(0, 2).map(n => n[0]).join('');
 }
 
 export function LeaderboardScreen() {
@@ -85,22 +75,27 @@ export function LeaderboardScreen() {
     <View style={styles.container}>
       <BravoHeader title="Liderlik Sırası" showBack />
 
-      {/* Period toggle */}
       <View style={styles.periodRow}>
-        <PeriodBtn label="Həftəlik" active={period === 'weekly'} onPress={() => setPeriod('weekly')} />
-        <PeriodBtn label="Aylıq" active={period === 'monthly'} onPress={() => setPeriod('monthly')} />
+        <Pressable style={[styles.periodBtn, period === 'weekly' && styles.periodBtnActive]} onPress={() => setPeriod('weekly')}>
+          <Text style={[styles.periodText, period === 'weekly' && styles.periodTextActive]}>Həftəlik</Text>
+        </Pressable>
+        <Pressable style={[styles.periodBtn, period === 'monthly' && styles.periodBtnActive]} onPress={() => setPeriod('monthly')}>
+          <Text style={[styles.periodText, period === 'monthly' && styles.periodTextActive]}>Aylıq</Text>
+        </Pressable>
       </View>
 
-      {/* Category tabs */}
       <View style={styles.catRow}>
         {(Object.keys(CATEGORY_LABELS) as Category[]).map(cat => (
-          <CategoryTab
+          <Pressable
             key={cat}
-            icon={CATEGORY_ICONS[cat]}
-            label={CATEGORY_LABELS[cat]}
-            active={category === cat}
+            style={[styles.catTab, category === cat && styles.catTabActive]}
             onPress={() => setCategory(cat)}
-          />
+          >
+            <Ionicons name={CATEGORY_ICONS[cat]} size={15} color={category === cat ? '#fff' : BRAVO_COLORS.textMuted} />
+            <Text style={[styles.catTabText, category === cat && styles.catTabTextActive]}>
+              {CATEGORY_LABELS[cat]}
+            </Text>
+          </Pressable>
         ))}
       </View>
 
@@ -108,7 +103,6 @@ export function LeaderboardScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: 16, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* My position */}
         {myEntry
           ? (
               <View style={styles.mySection}>
@@ -118,7 +112,6 @@ export function LeaderboardScreen() {
             )
           : null}
 
-        {/* List */}
         {entries.length === 0
           ? (
               <View style={styles.empty}>
@@ -127,43 +120,10 @@ export function LeaderboardScreen() {
               </View>
             )
           : entries.map(entry => (
-              <EntryCard
-                key={entry.userId}
-                entry={entry}
-                period={period}
-                maxPts={maxPts}
-                isMe={entry.userId === user.id}
-              />
+              <EntryCard key={entry.userId} entry={entry} period={period} maxPts={maxPts} isMe={entry.userId === user.id} />
             ))}
       </ScrollView>
     </View>
-  );
-}
-
-function PeriodBtn({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.periodBtn, active && styles.periodBtnActive]} onPress={onPress}>
-      <Text style={[styles.periodText, active && styles.periodTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function CategoryTab({
-  icon,
-  label,
-  active,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={[styles.catTab, active && styles.catTabActive]} onPress={onPress}>
-      <Ionicons name={icon} size={16} color={active ? '#fff' : BRAVO_COLORS.textMuted} />
-      <Text style={[styles.catTabText, active && styles.catTabTextActive]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -182,44 +142,25 @@ function EntryCard({
   const barWidth = maxPts > 0 ? (pts / maxPts) * 100 : 0;
   const rankColor = entry.rank <= 3 ? RANK_COLORS[entry.rank - 1]! : BRAVO_COLORS.textLight;
   const u = roleMap[entry.userId];
-  const roleLabelAz = u?.roleLabelAz ?? '';
 
   return (
     <View style={[styles.card, isMe && styles.cardMe]}>
-      {/* Rank */}
       <View style={[styles.rankBadge, { backgroundColor: entry.rank <= 3 ? rankColor : BRAVO_COLORS.border }]}>
-        <Text style={[styles.rankText, entry.rank > 3 && styles.rankTextDark]}>
-          {entry.rank}
-        </Text>
+        <Text style={[styles.rankText, entry.rank > 3 && styles.rankTextDark]}>{entry.rank}</Text>
       </View>
-
-      {/* Avatar initials */}
       <View style={[styles.avatar, isMe && styles.avatarMe]}>
         <Text style={styles.avatarText}>{initials(entry.nameAz)}</Text>
       </View>
-
-      {/* Info */}
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{entry.nameAz}</Text>
-          {entry.rank <= 3
-            ? (
-                <Ionicons
-                  name="trophy"
-                  size={13}
-                  color={rankColor}
-                />
-              )
-            : null}
+          {entry.rank <= 3 ? <Ionicons name="trophy" size={13} color={rankColor} /> : null}
         </View>
-        <Text style={styles.role} numberOfLines={1}>{roleLabelAz}</Text>
-        {/* Progress bar */}
+        <Text style={styles.role} numberOfLines={1}>{u?.roleLabelAz ?? ''}</Text>
         <View style={styles.barTrack}>
           <View style={[styles.barFill, { width: `${barWidth}%` as any, backgroundColor: isMe ? BRAVO_COLORS.primary : rankColor }]} />
         </View>
       </View>
-
-      {/* Points */}
       <View style={styles.ptsBlock}>
         <Text style={[styles.pts, { color: entry.rank <= 3 ? rankColor : BRAVO_COLORS.primary }]}>{pts}</Text>
         <Text style={styles.ptsLabel}>xal</Text>
@@ -230,101 +171,35 @@ function EntryCard({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BRAVO_COLORS.background },
-
-  periodRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: BRAVO_COLORS.surface,
-    borderRadius: 12,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: BRAVO_COLORS.border,
-  },
-  periodBtn: {
-    flex: 1,
-    paddingVertical: 9,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
+  periodRow: { flexDirection: 'row', marginHorizontal: 16, marginTop: 12, backgroundColor: BRAVO_COLORS.surface, borderRadius: 12, padding: 3, borderWidth: 1, borderColor: BRAVO_COLORS.border },
+  periodBtn: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 10 },
   periodBtnActive: { backgroundColor: BRAVO_COLORS.primary },
   periodText: { fontSize: 13, fontWeight: '600', color: BRAVO_COLORS.textMuted },
   periodTextActive: { color: '#fff' },
-
-  catRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  catTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: BRAVO_COLORS.surface,
-    borderWidth: 1,
-    borderColor: BRAVO_COLORS.border,
-  },
+  catRow: { flexDirection: 'row', gap: 8, marginHorizontal: 16, marginTop: 10, marginBottom: 4 },
+  catTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 10, borderRadius: 12, backgroundColor: BRAVO_COLORS.surface, borderWidth: 1, borderColor: BRAVO_COLORS.border },
   catTabActive: { backgroundColor: BRAVO_COLORS.primary, borderColor: BRAVO_COLORS.primary },
-  catTabText: { fontSize: 12, fontWeight: '600', color: BRAVO_COLORS.textMuted },
+  catTabText: { fontSize: 11, fontWeight: '600', color: BRAVO_COLORS.textMuted },
   catTabTextActive: { color: '#fff' },
-
   mySection: { marginBottom: 16 },
   mySectionLabel: { fontSize: 12, fontWeight: '600', color: BRAVO_COLORS.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: BRAVO_COLORS.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: BRAVO_COLORS.border,
-  },
-  cardMe: {
-    borderColor: BRAVO_COLORS.primary,
-    backgroundColor: BRAVO_COLORS.primaryLight,
-  },
-
-  rankBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: BRAVO_COLORS.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: BRAVO_COLORS.border },
+  cardMe: { borderColor: BRAVO_COLORS.primary, backgroundColor: BRAVO_COLORS.primaryLight },
+  rankBadge: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   rankText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   rankTextDark: { color: BRAVO_COLORS.textMuted },
-
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: BRAVO_COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAVO_COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   avatarMe: { backgroundColor: BRAVO_COLORS.primaryDark ?? BRAVO_COLORS.primary },
   avatarText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-
   info: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
   name: { fontSize: 14, fontWeight: '700', color: BRAVO_COLORS.text, flex: 1 },
   role: { fontSize: 11, color: BRAVO_COLORS.textMuted, marginBottom: 6 },
   barTrack: { height: 4, backgroundColor: BRAVO_COLORS.border, borderRadius: 2, overflow: 'hidden' },
   barFill: { height: 4, borderRadius: 2 },
-
   ptsBlock: { alignItems: 'center' },
   pts: { fontSize: 20, fontWeight: '800' },
   ptsLabel: { fontSize: 10, color: BRAVO_COLORS.textMuted, fontWeight: '600' },
-
   empty: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 14, color: BRAVO_COLORS.textMuted },
 });
