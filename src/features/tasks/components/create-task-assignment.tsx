@@ -36,13 +36,15 @@ export function CreateTaskAssignment({
           Ümumi Hovuz (hər kəs götürə bilər)
         </Text>
       </Pressable>
-      <Text style={styles.orText}>və ya işçiyə təyin et</Text>
+      <Text style={styles.orText}>
+        {isGeneralPool ? 'Əlavə olaraq birini də seç (opsional)' : 'və ya işçiyə təyin et'}
+      </Text>
       {assignable.map(a => (
         <Pressable
           key={a.id}
           style={[
             styles.assigneeRow,
-            assigneeId === a.id && !isGeneralPool && styles.assigneeActive,
+            assigneeId === a.id && styles.assigneeActive,
           ]}
           onPress={() => onSelectAssignee(a.id)}
         >

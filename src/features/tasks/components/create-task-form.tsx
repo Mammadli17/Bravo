@@ -1,7 +1,7 @@
 import type { BravoUser, TaskPriority, TaskType } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from '@/components/ui';
 import { BRAVO_COLORS } from '../constants/theme';
 import { CreateTaskAssignment } from './create-task-assignment';
@@ -13,17 +13,18 @@ export type CreateTaskFormState = {
   taskType: TaskType;
   title: string;
   description: string;
-  location: string;
   priority: TaskPriority;
   categoryIndex: number;
   isGeneralPool: boolean;
   assigneeId?: string;
   beforeImage?: string;
   deadlineDays: number;
+  deadlineHours: number;
 };
 
 type Props = {
   assignable: BravoUser[];
+  itAssignable: BravoUser[];
   canOnlyIT: boolean;
   canCreateOperational: boolean;
   state: CreateTaskFormState;
@@ -33,6 +34,7 @@ type Props = {
 
 export function CreateTaskForm({
   assignable,
+  itAssignable,
   canOnlyIT,
   canCreateOperational,
   state,
@@ -40,14 +42,17 @@ export function CreateTaskForm({
   onSubmit,
 }: Props) {
   const set = (patch: Partial<CreateTaskFormState>) => onChange(patch);
+  const [itDropdownOpen, setItDropdownOpen] = React.useState(false);
+
+  const selectedIT = itAssignable.find(u => u.id === state.assigneeId);
 
   return (
     <>
       {!canOnlyIT
         ? (
             <View style={styles.typeRow}>
-              <TypeTab label="Operativ" active={state.taskType === 'operational'} onPress={() => set({ taskType: 'operational' })} />
-              <TypeTab label="IT Bilet" active={state.taskType === 'it_ticket'} onPress={() => set({ taskType: 'it_ticket' })} />
+              <TypeTab label="Operativ" active={state.taskType === 'operational'} onPress={() => set({ taskType: 'operational', assigneeId: undefined })} />
+              <TypeTab label="IT Bilet" active={state.taskType === 'it_ticket'} onPress={() => set({ taskType: 'it_ticket', assigneeId: undefined })} />
             </View>
           )
         : null}
@@ -57,9 +62,6 @@ export function CreateTaskForm({
       </Field>
       <Field label="Təsvir">
         <TextInput style={[styles.input, styles.textArea]} placeholder="Tapşırığın detalları..." placeholderTextColor={BRAVO_COLORS.textLight} value={state.description} onChangeText={description => set({ description })} multiline numberOfLines={4} textAlignVertical="top" />
-      </Field>
-      <Field label="Yer (opsional)">
-        <TextInput style={styles.input} placeholder="Məs: Aisle 7" placeholderTextColor={BRAVO_COLORS.textLight} value={state.location} onChangeText={location => set({ location })} />
       </Field>
 
       {state.taskType === 'operational'
@@ -72,25 +74,67 @@ export function CreateTaskForm({
                       assignable={assignable}
                       isGeneralPool={state.isGeneralPool}
                       assigneeId={state.assigneeId}
-                      onSelectPool={() => set({ isGeneralPool: true, assigneeId: undefined })}
-                      onSelectAssignee={id => set({ assigneeId: id, isGeneralPool: false })}
+                      onSelectPool={() => set({ isGeneralPool: !state.isGeneralPool })}
+                      onSelectAssignee={id => set({ assigneeId: state.assigneeId === id ? undefined : id })}
                     />
                   )
                 : null}
             </>
           )
         : (
-            <View style={styles.itInfo}>
-              <Ionicons name="information-circle" size={20} color="#4338CA" />
-              <Text style={styles.itInfoText}>IT bileti Regional IT növbəsinə göndəriləcək</Text>
+            <View style={styles.itAssignSection}>
+              <Text style={styles.fieldLabel}>Təyin et (opsional)</Text>
+              <Pressable
+                style={[styles.dropdownTrigger, itDropdownOpen && styles.dropdownTriggerOpen]}
+                onPress={() => setItDropdownOpen(o => !o)}
+              >
+                <Text style={[styles.dropdownTriggerText, !selectedIT && styles.dropdownPlaceholder]}>
+                  {selectedIT ? selectedIT.nameAz : 'İşçi seç...'}
+                </Text>
+                <Ionicons
+                  name={itDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={BRAVO_COLORS.textMuted}
+                />
+              </Pressable>
+              {itDropdownOpen && (
+                <View style={styles.dropdownList}>
+                  {itAssignable.length === 0
+                    ? (
+                        <Text style={styles.dropdownEmpty}>İşçi tapılmadı</Text>
+                      )
+                    : itAssignable.map(u => (
+                        <Pressable
+                          key={u.id}
+                          style={[styles.dropdownItem, state.assigneeId === u.id && styles.dropdownItemActive]}
+                          onPress={() => {
+                            set({ assigneeId: state.assigneeId === u.id ? undefined : u.id });
+                            setItDropdownOpen(false);
+                          }}
+                        >
+                          <View>
+                            <Text style={[styles.dropdownItemName, state.assigneeId === u.id && styles.dropdownItemNameActive]}>
+                              {u.nameAz}
+                            </Text>
+                            <Text style={styles.dropdownItemRole}>{u.roleLabelAz}</Text>
+                          </View>
+                          {state.assigneeId === u.id && (
+                            <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                          )}
+                        </Pressable>
+                      ))}
+                </View>
+              )}
             </View>
           )}
 
       <CreateTaskOptions
         priority={state.priority}
         deadlineDays={state.deadlineDays}
+        deadlineHours={state.deadlineHours}
         onPriorityChange={priority => set({ priority })}
         onDeadlineChange={deadlineDays => set({ deadlineDays })}
+        onDeadlineHoursChange={deadlineHours => set({ deadlineHours })}
       />
 
       <MockImagePicker label="Əvvəl Şəkli" hint="Problemin fotosu" imageUrl={state.beforeImage} onImageSelected={beforeImage => set({ beforeImage })} variant="before" />
@@ -130,8 +174,44 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 14, fontWeight: '600', color: BRAVO_COLORS.text, marginBottom: 8 },
   input: { backgroundColor: BRAVO_COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: BRAVO_COLORS.border, paddingHorizontal: 14, height: 48, fontSize: 15, color: BRAVO_COLORS.text },
   textArea: { height: 100, paddingTop: 14 },
-  itInfo: { flexDirection: 'row', gap: 10, backgroundColor: '#EEF2FF', padding: 14, borderRadius: 12, marginBottom: 16 },
-  itInfoText: { flex: 1, fontSize: 13, color: '#4338CA', lineHeight: 18 },
+  itAssignSection: { marginBottom: 16 },
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: BRAVO_COLORS.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BRAVO_COLORS.border,
+    paddingHorizontal: 14,
+    height: 48,
+  },
+  dropdownTriggerOpen: { borderColor: BRAVO_COLORS.primary, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  dropdownTriggerText: { fontSize: 15, color: BRAVO_COLORS.text, fontWeight: '500' },
+  dropdownPlaceholder: { color: BRAVO_COLORS.textLight },
+  dropdownList: {
+    backgroundColor: BRAVO_COLORS.surface,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: BRAVO_COLORS.primary,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: BRAVO_COLORS.border,
+  },
+  dropdownItemActive: { backgroundColor: BRAVO_COLORS.primary },
+  dropdownItemName: { fontSize: 14, fontWeight: '600', color: BRAVO_COLORS.text },
+  dropdownItemNameActive: { color: '#fff' },
+  dropdownItemRole: { fontSize: 12, color: BRAVO_COLORS.textMuted, marginTop: 2 },
+  dropdownEmpty: { padding: 14, fontSize: 13, color: BRAVO_COLORS.textMuted, textAlign: 'center' },
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: BRAVO_COLORS.primary, borderRadius: 14, height: 52, marginTop: 8 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

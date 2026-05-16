@@ -457,6 +457,10 @@ export function getUserById(userId: string): BravoUser | undefined {
   return MOCK_USERS.find(u => u.id === userId);
 }
 
+export function getITUsers(creatorId?: string): BravoUser[] {
+  return MOCK_USERS.filter(u => u.id !== creatorId);
+}
+
 export function getAssignableUsers(
   creator: BravoUser,
 ): BravoUser[] {

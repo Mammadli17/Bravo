@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BravoHeader } from '../components/bravo-header';
 import { CreateTaskForm } from '../components/create-task-form';
 import { BRAVO_COLORS } from '../constants/theme';
-import { getAssignableUsers } from '../data/mock-data';
+import { getAssignableUsers, getITUsers } from '../data/mock-data';
 import { getCategoryByIndex } from '../lib/categories';
 import { getPriorityPoints } from '../lib/priority-points';
 import { useBravoSession } from '../use-bravo-session';
@@ -22,16 +22,17 @@ export function CreateTaskScreen() {
   const canCreateOperational = user.canAssignTasks || user.role === 'department_head';
   const canOnlyIT = !canCreateOperational && user.canCreateITTicket;
   const assignable = React.useMemo(() => getAssignableUsers(user), [user]);
+  const itAssignable = React.useMemo(() => getITUsers(user.id), [user.id]);
 
   const [form, setForm] = React.useState<CreateTaskFormState>({
     taskType: canOnlyIT ? 'it_ticket' : 'operational',
     title: '',
     description: '',
-    location: '',
     priority: 'medium',
     categoryIndex: 0,
     isGeneralPool: false,
     deadlineDays: 2,
+    deadlineHours: 0,
   });
 
   const patchForm = (patch: Partial<CreateTaskFormState>) =>
@@ -46,6 +47,9 @@ export function CreateTaskScreen() {
     const category = getCategoryByIndex(form.categoryIndex);
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + form.deadlineDays);
+    if (form.deadlineHours > 0) {
+      deadline.setHours(deadline.getHours() + form.deadlineHours);
+    }
 
     const task = createTask({
       title: form.title.trim(),
@@ -56,15 +60,14 @@ export function CreateTaskScreen() {
       points: getPriorityPoints(form.priority),
       createdById: user.id,
       storeId: user.storeId,
-      assignedToId:
-        form.taskType === 'it_ticket' ? undefined : form.isGeneralPool ? undefined : form.assigneeId,
+      assignedToId: form.assigneeId,
       isGeneralPool:
         form.taskType === 'it_ticket'
         || (form.taskType === 'operational' && (form.isGeneralPool || !form.assigneeId)),
       beforeImageUrl: form.beforeImage,
       category: form.taskType === 'it_ticket' ? 'IT Support' : category.en,
       categoryAz: form.taskType === 'it_ticket' ? 'IT Dəstək' : category.az,
-      location: form.location.trim() || undefined,
+      location: undefined,
     });
 
     showMessage({ message: 'Tapşırıq yaradıldı', type: 'success' });
@@ -81,6 +84,7 @@ export function CreateTaskScreen() {
       >
         <CreateTaskForm
           assignable={assignable}
+          itAssignable={itAssignable}
           canOnlyIT={canOnlyIT}
           canCreateOperational={canCreateOperational}
           state={form}
